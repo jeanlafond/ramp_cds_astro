@@ -3,14 +3,13 @@ import scipy as sp
 import sklearn.linear_model as lm
 
 def fourier_regression( Y,X, error, order):
-    clf = lm.Lasso(fit_intercept = False, alpha = 10)
+    clf = lm.Lasso(fit_intercept = False, alpha = 60)
     n = X.shape[0]
-    print n
     X_reg = np.zeros((n,2 *order + 1))
     for i in range(n):
         for j in range(order):
             X_reg[i,j+1] = sp.sin( j * X[i])/error[i]
-            X_reg[i,j+order + 1] = sp.cos( j)/error[i]
+            X_reg[i,j+order + 1] = sp.cos( j* X[i])/error[i]
     clf.fit(X_reg,Y)
     return clf.coef_
 
@@ -43,14 +42,7 @@ class FeatureExtractor(object):
         pass
 
     def transform(self, X_dict):
-        order = 20
-        num_points_per_period = 200
-        bins_per_period = 10
-        sampling_rate = num_points_per_period / bins_per_period
-        t_test = np.linspace(-2 * np.pi, 4 * np.pi, 3 * num_points_per_period)
-        num_gp_bins = 10
-        gp_bins = [i * 2 * np.pi / num_gp_bins for i in range(num_gp_bins + 1)]
-   
+        order = 20 
         X = []
         ii = 0
         for x in X_dict:
@@ -65,6 +57,8 @@ class FeatureExtractor(object):
                 y_train = x['light_points_' + color]
                 y_sigma = x['error_points_' + color]
                 res = fourier_regression(y_train,x_train,y_sigma,order)
+                # res /= np.sqrt(np.sum(res ** 2))
                 for coef in res: x_new.append( coef)
+                   
             X.append(x_new) 
         return np.array(X) 
